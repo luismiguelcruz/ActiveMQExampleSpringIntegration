@@ -7,13 +7,13 @@
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
 		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
 
-    <int:channel id="processEmpChannel">
+    <int:channel id="processMessageChannel">
         <int:queue/>
     </int:channel>
 
     <int-jms:inbound-channel-adapter
-            channel="processEmpChannel" connection-factory="connectionFactory"
-            destination-name="empQueue">
+            channel="processMessageChannel" connection-factory="connectionFactory"
+            destination-name="queue_spring_integration_1">
         <int:poller fixed-delay="5000" />
     </int-jms:inbound-channel-adapter>
 
@@ -32,11 +32,11 @@
         <property name="connectionFactory" ref="connectionFactory" />
     </bean>
 
-    <bean id="springIntBean" class="com.ixxus.activeMqCommunication.bootApp.SpringIntegrationJms">
+    <bean id="springIntegrationJms" class="com.ixxus.activeMqCommunication.bootApp.SpringIntegrationJms">
         <property name="jmsTemplate" ref="jmsTemplate" />
     </bean>
 
-    <int:service-activator input-channel="processEmpChannel" ref="springIntBean" method="processEmployee">
+    <int:service-activator input-channel="processMessageChannel" ref="springIntegrationJms" method="processMessage">
         <int:poller fixed-delay="500" />
     </int:service-activator>
 </beans>

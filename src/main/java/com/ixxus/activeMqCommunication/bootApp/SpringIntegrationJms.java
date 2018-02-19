@@ -12,13 +12,11 @@ public class SpringIntegrationJms {
 
     public static void main(String[] args) {
         ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
-        SpringIntegrationJms springIntExample = (SpringIntegrationJms) context.getBean("springIntExample");
-        springIntExample.sendEmployee();
+        SpringIntegrationJms springIntExample = (SpringIntegrationJms) context.getBean("springIntegrationJms");
+        springIntExample.sendMessage(HELLO_WORLD);
     }
 
-    public void sendEmployee() {
-        String message = HELLO_WORLD;
-        System.out.println("Queue message: " + message + " for processing");
+    public void sendMessage(String message) {
         getJmsTemplate().convertAndSend(QUEUE_HELLO_WORLD_SPRING_INTEGRATION, message);
     }
 

@@ -2,44 +2,23 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:int="http://www.springframework.org/schema/integration"
-       xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
-       xmlns:context="http://www.springframework.org/schema/context"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
-		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd">
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration
+		http://www.springframework.org/schema/integration/spring-integration.xsd">
 
-    <context:property-placeholder location="classpath:application.properties" />
-
-    <int:channel id="processMessageChannel">
-        <int:queue/>
-    </int:channel>
-
-    <int-jms:inbound-channel-adapter
-            channel="processMessageChannel" connection-factory="connectionFactory"
-            destination-name="queue_spring_integration_1">
+    <bean id="messageGenerator" class="com.ixxus.activeMqCommunication.jms.MessageGenerator" />
+    <int:inbound-channel-adapter id="pollingMessageGenerator" ref="messageGenerator" method="createMessage" channel="generateMessageChannel">
         <int:poller fixed-delay="5000" />
-    </int-jms:inbound-channel-adapter>
+    </int:inbound-channel-adapter>
 
-    <bean id="connectionFactory"
-          class="org.springframework.jms.connection.CachingConnectionFactory">
-        <property name="targetConnectionFactory">
-            <bean class="org.apache.activemq.ActiveMQConnectionFactory">
-                <property name="brokerURL" ref="${broker.url}" />
-            </bean>
-        </property>
-        <property name="sessionCacheSize" value="10" />
-        <property name="cacheProducers" value="false" />
-    </bean>
 
-    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
-        <property name="connectionFactory" ref="connectionFactory" />
-    </bean>
+    <int:channel id="generateMessageChannel"/>
 
-    <bean id="messageGeneratorService" class="com.ixxus.activeMqCommunication.bootApp.MessageGeneratorService">
-        <property name="jmsTemplate" ref="jmsTemplate" />
-    </bean>
 
-    <int:service-activator input-channel="processMessageChannel" ref="messageGeneratorService" method="processMessage">
-        <int:poller fixed-delay="5000" />
-    </int:service-activator>
+
+    <int:service-activator input-channel="generateMessageChannel" id="messageLoggerServicaActivator" ref="messageLoggerService" method="logMessage" />
+    <bean id="messageLoggerService" class="com.ixxus.activeMqCommunication.jms.MessageLogger" />
+
 </beans>

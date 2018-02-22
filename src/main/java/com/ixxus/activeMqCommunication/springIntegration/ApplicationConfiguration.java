@@ -1,10 +1,12 @@
-package com.ixxus.activeMqCommunication.bootApp;
+package com.ixxus.activeMqCommunication.springIntegration;
 
+import com.ixxus.activeMqCommunication.config.ActiveMqConfiguration;
 import com.ixxus.activeMqCommunication.jms.MessageGenerator;
-import com.ixxus.activeMqCommunication.jms.MessageLogger;
-import org.apache.activemq.spring.ActiveMQConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.annotation.InboundChannelAdapter;
@@ -17,26 +19,19 @@ import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.core.Pollers;
 import org.springframework.integration.dsl.jms.Jms;
 import org.springframework.integration.endpoint.MethodInvokingMessageSource;
-import org.springframework.integration.json.ObjectToJsonTransformer;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.Message;
 
-import java.lang.annotation.Target;
-
-import static com.ixxus.activeMqCommunication.bootApp.ActiveMqConfiguration.QUEUE_HELLO_WORLD;
-
 @Configuration
 public class ApplicationConfiguration {
-    public static final String BROKER_URL = "tcp://localhost:61616";
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationConfiguration.class);
+
+    @Value(value = "${spring.activemq.queue-name}")
+    public String QUEUE_HELLO_WORLD;
 
     @Autowired
     @Qualifier("messageGenerator")
     private MessageGenerator messageGenerator;
-
-    @Autowired
-    @Qualifier("messageLogger")
-    private MessageLogger messageLogger;
-
 
     @Autowired
     @Qualifier("jmsTemplate")
@@ -44,7 +39,7 @@ public class ApplicationConfiguration {
 
 
     @Bean(name="pollingMessageGenerator")
-    @InboundChannelAdapter(value = "generateMessageChanel", poller = @Poller(fixedDelay = "5000", maxMessagesPerPoll = "1"))
+    @InboundChannelAdapter(value = "generateMessageChannel", poller = @Poller(fixedDelay = "5000", maxMessagesPerPoll = "1"))
     public MessageSource<String> getInboundChannelAdapter() {
         final MessageSource messageSource= new MethodInvokingMessageSource();
         final MethodInvokingMessageSource methodInvokingMessageSource = (MethodInvokingMessageSource) messageSource;
@@ -53,7 +48,7 @@ public class ApplicationConfiguration {
         return messageSource;
     }
 
-    @Bean(name="generateMessageChanel")
+    @Bean(name="generateMessageChannel")
     public DirectChannel getGenerateMessageChannel() {
         return new DirectChannel();
     }
@@ -61,7 +56,7 @@ public class ApplicationConfiguration {
 
     @Bean
     public IntegrationFlow jmsOutboundFlow() {
-        return IntegrationFlows.from("generateMessageChanel")
+        return IntegrationFlows.from("generateMessageChannel")
                 .handle(Jms.outboundAdapter(jmsTemplate).destination(QUEUE_HELLO_WORLD))
                 .get();
     }
@@ -79,17 +74,8 @@ public class ApplicationConfiguration {
                 .get();
     }
 
-    /*@Bean
     @ServiceActivator(inputChannel = "inboundJMSChannel")
-    public IntegrationFlow inboundJMSChannelReader() {
-        return IntegrationFlows.from("inboundJMSChannel")
-                .handle(messageLogger)
-                .get();
-    }*/
-
-
-    /*@ServiceActivator(inputChannel = "inboundJMSChannel", )
-    public void processMessage(MessageLoger messageLogger) {
-        System.out.println("ExampleLuismi: "+messageLogger.logMessage());
-    }*/
+    public void logMessage(Message<String> message){
+        LOGGER.info(message.getPayload());
+    }
 }
